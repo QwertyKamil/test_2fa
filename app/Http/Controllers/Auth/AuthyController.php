@@ -29,7 +29,8 @@ class AuthyController extends Controller
         $oneTouch = OneTouch::where('uuid', '=', session('one_touch_uuid'))->firstOrFail();
         $status = $oneTouch->status;
         if ($status == 'approved') {
-            Auth::login(User::find(session('id')));
+            $user = Sentinel::findById(session('id'));
+            Sentinel::login($user);
         }
         return response()->json(['status' => $status]);
     }
