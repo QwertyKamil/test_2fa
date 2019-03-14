@@ -23,7 +23,7 @@ Route::get('/home', 'HomeController@index')->name('home');
 Route::get('two-factor', 'Auth\LoginController@getTwoFactor');
 Route::post('two-factor', 'Auth\LoginController@postTwoFactor');
 
-Route::get('authy/status', 'if ($user = Sentinel::check()) {Auth\AuthyController@status');
+Route::get('authy/status', 'Auth\AuthyController@status');
 Route::get('getUserData', function () {
     if ($user = Sentinel::check()) {
         return response()->json($user);
