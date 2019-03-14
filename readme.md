@@ -1,4 +1,4 @@
-##Test Two-Factor Authentication with Authy, Sentinel and Laravel
+# Test Two-Factor Authentication with Authy, Sentinel and Laravel
 
 You can simply register at `/register` using email address, phone number, name and password. Then authorise by code from Authy app. <br>
 Also u can login at `/login` by email and password. Then authorise by code form Authy app. <br>
