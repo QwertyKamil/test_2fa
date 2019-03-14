@@ -84,11 +84,7 @@ class LoginController extends Controller
     {
         $credentials = $request->only('email', 'password');
         $user =  Sentinel::authenticate($credentials);
-        return response()->json([
-            'status' => '
-                failed',
-            'message' => Sentinel::authenticate($credentials)
-            ]);
+        Sentinel::logout();
         if ($user) {
             //$user = User::where('email', '=', $request->input('email'))->firstOrFail();
 
