@@ -9,7 +9,6 @@ $(document).ready(function() {
   var attemptOneTouchVerification = function(form) {
       $('#ajax-error').addClass('hidden');
       $.post( "/login", form, function(data) {
-        console.log(data);
       if (data.status === 'ok') {
         $('#authy-modal').modal({backdrop:'static'},'show');
         $('.auth-ot').fadeIn();

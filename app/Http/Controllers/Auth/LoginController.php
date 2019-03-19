@@ -47,7 +47,11 @@ class LoginController extends Controller
 
     public function getTwoFactor()
     {
-        $message = session('message'); //Session::get('message');
+        if (!session('password_validated') || !session('id')|| !session('register')) {
+            return redirect('/login')->with('message','Try again');
+        }
+        session()->forget('register');
+        $message = session('message');
 
         return view('auth/two-factor', ['message' => $message]);
     }
@@ -59,14 +63,24 @@ class LoginController extends Controller
         }
 
         if (isset($_POST['token'])) {
-            $user = Sentinel::findById( session('id'));
-            if ($this->authy->verifyToken($user->authy_id, $request->input('token'))) {
-                //Auth::login($user);
-                Sentinel::login($user);
-                return redirect()->intended('/home');
-            } else {
-                return redirect('/two-factor')->withErrors([
-                    'token' => 'The token you entered is incorrect',
+            $this->validate($request,[
+                'token'=>'numeric|required',
+            ]);
+            $user = Sentinel::findById(session('id'));
+            try{
+                if ($this->authy->verifyToken($user->authy_id, $request->input('token'))) {
+                    //Auth::login($user);
+                    Sentinel::login($user);
+                    return redirect()->intended('/home');
+                } else {
+                    return redirect('/login')->with([
+                        'error' => 'The token you entered is incorrect',
+                    ]);
+                }
+            }
+            catch (\Exception $e){
+                return redirect('/login')->with([
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -75,7 +89,7 @@ class LoginController extends Controller
     /**
      * Handle a login request to the application.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse
      *
      * @throws \Illuminate\Validation\ValidationException
@@ -83,11 +97,9 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
-        $user =  Sentinel::authenticate($credentials);
+        $user = Sentinel::authenticate($credentials);
         Sentinel::logout();
         if ($user) {
-            //$user = User::where('email', '=', $request->input('email'))->firstOrFail();
-
             session(['password_validated' => true, 'id' => $user->id]);
 
             if ($this->authy->verifyUserStatus($user->authy_id)->registered) {
@@ -95,16 +107,15 @@ class LoginController extends Controller
 
                 OneTouch::create(['uuid' => $uuid]);
 
-                session([ 'one_touch_uuid' => $uuid]);
+                session(['one_touch_uuid' => $uuid]);
 
                 return response()->json(['status' => 'ok']);
             } else {
-                    return response()->json(['status' => 'verify']);
-                }
+                return response()->json(['status' => 'verify']);
+            }
         } else {
             return response()->json([
-                'status' => '
-                failed',
+                'status' => 'failed',
                 'message' => 'The email and password combination you entered is incorrect.'
             ]);
         }

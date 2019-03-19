@@ -87,7 +87,7 @@ class RegisterController extends Controller
         $this->validator($request->all())->validate();
 
         event(new Registered($user = $this->create($request->all())));
-        session([ 'password_validated' => true,'id'=>$user->id]);
+        session([ 'password_validated' => true,'id'=>$user->id,'register'=>true]);
 
         $authy_id = $this->authy->register($user->email, $user->phone_number, $user->country_code);
 

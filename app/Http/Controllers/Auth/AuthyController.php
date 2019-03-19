@@ -5,6 +5,7 @@ use Auth;
 use App\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Sentinel;
 
 class AuthyController extends Controller
 {
