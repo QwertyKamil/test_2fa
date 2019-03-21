@@ -10,24 +10,24 @@
                     <div class='help-block'>
                         <i class="fa fa-spinner fa-pulse"></i> Waiting for OneTouch Approval, check your phone ...
                     </div>
+                    <a class="btn btn-default" href="#" data-dismiss="modal" onclick="cancelLogin()">Cancel</a>
                 </div>
                 <div class='modal-body auth-token'>
                     <div class='help-block'>
                         <i class="fa fa-mobile"></i>Authy OneTouch not available?
                     </div>
-                    <p>You can also enter your Token</p>
+                    <p id="token-info">You can also enter your Token</p>
                     <form id="authy-sms-form" class="form-horizontal" role="form" method="POST" action="/two-factor">
                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                         <div class='form-group'>
                             <label class="col-4 control-label text-left" for="token">Authy Token</label>
                             <div class='col-12'>
-                                <input type="text" name="token" id="authy-token" ng-model="token" value=""
+                                <input type="text" name="token" id="authy-token" value=""
                                        class="form-control" autocomplete="off"/>
                             </div>
                         </div>
-                        <a value="Verify" class="btn btn-default" href="#" ng-click="cancel()">Cancel</a>
-                        <input type="submit" name="commit" value="Verify2" class="btn btn-success"
-                               ng-click="verifyToken(token)"/>
+                        <a class="btn btn-default" href="#" data-dismiss="modal" onclick="cancelLogin()">Cancel</a>
+                        <input type="submit" name="commit" value="Verify2" class="btn btn-success"/>
                     </form>
                 </div>
             </div>
@@ -91,11 +91,6 @@
                                     </div>
                                 </div>
                             </div> --}}
-                            @if ($errors->has('token'))
-                                <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $errors->first('token') }}</strong>
-                                    </span>
-                            @endif
 
                             <div class="form-group row mb-0">
                                 <div class="col-md-8 offset-md-4">
@@ -115,5 +110,5 @@
     </div>
 @endsection
 @section('js')
-    <script src="/js/sessions.js" type="text/javascript"></script>
+    <script src="{{asset('js/sessions.js')}}" type="text/javascript"></script>
 @endsection

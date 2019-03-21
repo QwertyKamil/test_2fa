@@ -29,7 +29,7 @@ Route::post('password/reset', 'Auth\ResetPasswordController@reset')->name('passw
 
 Route::get('/home', 'HomeController@index')->name('home');
 
-Route::get('two-factor', 'Auth\LoginController@getTwoFactor');
+Route::get('two-factor', 'Auth\RegisterController@getTwoFactor');
 Route::post('two-factor', 'Auth\LoginController@postTwoFactor');
 
 Route::get('authy/status', 'Auth\AuthyController@status');
@@ -41,3 +41,4 @@ Route::get('getUserData', function () {
     }
 });
 Route::post('authy/callback', 'Auth\AuthyController@callback');
+Route::post('authy/send_token', 'Auth\LoginController@sendToken');

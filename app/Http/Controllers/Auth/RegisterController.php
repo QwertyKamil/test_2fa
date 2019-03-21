@@ -87,7 +87,7 @@ class RegisterController extends Controller
         $this->validator($request->all())->validate();
 
         event(new Registered($user = $this->create($request->all())));
-        session([ 'password_validated' => true,'id'=>$user->id,'register'=>true]);
+        session([ 'id'=>$user->id,'register'=>true]);
 
         $authy_id = $this->authy->register($user->email, $user->phone_number, $user->country_code);
 
@@ -101,5 +101,16 @@ class RegisterController extends Controller
         }
 
         return $this->registered($request, $user) ?: redirect($this->redirectPath())->with('message', $message);;
+    }
+
+    public function getTwoFactor()
+    {
+        if (!session('id') || !session('register')) {
+            return redirect('/login')->with('message', 'Try again');
+        }
+        session()->forget('register');
+        $message = session('message');
+
+        return view('auth/two-factor', ['message' => $message]);
     }
 }

@@ -1,49 +1,63 @@
-$(document).ready(function() {
-  console.log('loaded');
-  $('#login-form').submit(function(e) {
-    e.preventDefault();
-    formData = $(e.currentTarget).serialize();
-    attemptOneTouchVerification(formData);
-  });
+var timeout = null;
 
-  var attemptOneTouchVerification = function(form) {
-      $('#ajax-error').addClass('hidden');
-      $.post( "/login", form, function(data) {
-      if (data.status === 'ok') {
-        $('#authy-modal').modal({backdrop:'static'},'show');
-        $('.auth-ot').fadeIn();
-        checkForOneTouch();
-      } else if (data.status === 'verify') {
-        $('#authy-modal').modal({backdrop:'static'},'show');
-        $('.auth-token').fadeIn()
-      } else if (data.status === 'failed') {
-        $('#ajax-error').html(data.message);
-        $('#ajax-error').removeClass('hidden');
-      }
+$(document).ready(function () {
+    console.log('loaded');
+    $('#login-form').submit(function (e) {
+        e.preventDefault();
+        formData = $(e.currentTarget).serialize();
+        attemptOneTouchVerification(formData);
     });
-  };
 
-  var checkForOneTouch = function() {
-    $.get("/authy/status", function (data) {
-      console.log(data);
-      if (data.status === 'approved') {
-        window.location.href = "/home";
-      } else if (data.status === 'denied') {
-        showTokenForm();
-        triggerSMSToken();
-      } else {
-        setTimeout(checkForOneTouch, 5000);
-      }
-    });
-  };
+    var attemptOneTouchVerification = function (form) {
+        $('#ajax-error').addClass('hidden');
+        $.post("/login", form, function (data) {
+            if (data.status === 'ok') {
+                $('#authy-modal').modal({backdrop: 'static'}, 'show');
+                $('.auth-ot').fadeIn();
+                checkForOneTouch();
+            } else if (data.status === 'verify') {
+                $('#authy-modal').modal({backdrop: 'static'}, 'show');
+                $('.auth-token').fadeIn()
+            } else if (data.status === 'failed') {
+                $('#ajax-error').html(data.message);
+                $('#ajax-error').removeClass('hidden');
+            }
+        });
+    };
 
-  var showTokenForm = function() {
-    $('.auth-ot').fadeOut(function() {
-      $('.auth-token').fadeIn('slow')
-    })
-  };
+    var checkForOneTouch = function () {
+        $.get("/authy/status", function (data) {
+            if (data.status === 'approved') {
+                window.location.href = "/home";
+            } else if (data.status === 'denied') {
+                //showTokenForm();
+                triggerSMSToken();
+            } else {
+                timeout = setTimeout(checkForOneTouch, 5000);
+            }
+        });
+    };
 
-  var triggerSMSToken = function() {
-    $.get("/authy/send_token")
-  };
+    var showTokenForm = function () {
+        $('.auth-ot').fadeOut(function () {
+            $('.auth-token').fadeIn('slow')
+        })
+    };
+
+    var triggerSMSToken = function () {
+        $.post("/authy/send_token", {
+            _token:$('meta[name="csrf-token"]').attr('content'),
+        }, function (data) {
+            $('#token-info').html(data.message);
+            showTokenForm();
+        })
+    };
+
 });
+
+function cancelLogin() {
+    if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+    }
+}

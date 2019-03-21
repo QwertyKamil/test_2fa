@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Authy\Service;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TwoFactorRequest;
+use Cartalyst\Sentinel\Checkpoints\ThrottlingException;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use App\User;
 use App\OneTouch;
 use Auth;
 use Sentinel;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class LoginController extends Controller
 {
@@ -36,7 +39,7 @@ class LoginController extends Controller
     /**
      * Create a new controller instance.
      *
-     * @return void
+     * @param Service $authy
      */
     public function __construct(Service $authy)
     {
@@ -45,44 +48,27 @@ class LoginController extends Controller
     }
 
 
-    public function getTwoFactor()
+    public function postTwoFactor(TwoFactorRequest $request)
     {
-        if (!session('password_validated') || !session('id')|| !session('register')) {
-            return redirect('/login')->with('message','Try again');
-        }
-        session()->forget('register');
-        $message = session('message');
-
-        return view('auth/two-factor', ['message' => $message]);
-    }
-
-    public function postTwoFactor(Request $request)
-    {
-        if (!session('password_validated') || !session('id')) {
+        if (!session('id')) {
             return redirect('/login');
         }
 
-        if (isset($_POST['token'])) {
-            $this->validate($request,[
-                'token'=>'numeric|required',
-            ]);
-            $user = Sentinel::findById(session('id'));
-            try{
-                if ($this->authy->verifyToken($user->authy_id, $request->input('token'))) {
-                    //Auth::login($user);
-                    Sentinel::login($user);
-                    return redirect()->intended('/home');
-                } else {
-                    return redirect('/login')->with([
-                        'error' => 'The token you entered is incorrect',
-                    ]);
-                }
-            }
-            catch (\Exception $e){
+        $user = Sentinel::findById(session('id'));
+        try {
+            if ($this->authy->verifyToken($user->authy_id, $request->input('token'))) {
+                //Auth::login($user);
+                Sentinel::login($user);
+                return redirect()->intended('/home');
+            } else {
                 return redirect('/login')->with([
-                    'error' => $e->getMessage(),
+                    'error' => 'The token you entered is incorrect',
                 ]);
             }
+        } catch (\Exception $e) {
+            return redirect('/login')->with([
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -97,10 +83,18 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
-        $user = Sentinel::authenticate($credentials);
+        try {
+            $user = Sentinel::authenticate($credentials);
+        } catch (ThrottlingException $exception) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
         Sentinel::logout();
         if ($user) {
-            session(['password_validated' => true, 'id' => $user->id]);
+            session(['id' => $user->id]);
 
             if ($this->authy->verifyUserStatus($user->authy_id)->registered) {
                 $uuid = $this->authy->sendOneTouch($user->authy_id, 'Request to Login to Twilio demo app');
@@ -119,5 +113,19 @@ class LoginController extends Controller
                 'message' => 'The email and password combination you entered is incorrect.'
             ]);
         }
+    }
+
+    public function sendToken(Request $request)
+    {
+        $user = Sentinel::findById(session('id'));
+        if ($this->authy->verifyUserStatus($user->authy_id)->registered)
+            $message = "Open Authy app in your phone to see the verification code";
+        else {
+            $this->authy->sendToken($user->authy_id);
+            $message = "You will receive an SMS with the verification code";
+        }
+        $status = "ok";
+
+        return response()->json(['status' => $status, 'message' => $message], 200);
     }
 }
